@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using HtmlAgilityPack;
+using System;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
-using System.Security.Policy;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms.VisualStyles;
-using HtmlAgilityPack;
+using BrightIdeasSoftware;
 
 namespace BritScraper
 {
@@ -23,6 +17,54 @@ namespace BritScraper
             _doc = Web.Load(pageUri);
         }
 
+        public static void GetJammerbugt()
+        {
+            Uri page = new Uri("https://signatur.frontlab.com/ExtJobs/DefaultHosting/JobList.aspx?ClientId=1475");
+            LoadPage(page);
+
+            var nodes = _doc.DocumentNode.SelectNodes("//*[@class='job-list-classic']");
+
+            foreach (var node in nodes)
+            {
+                var catNodes = node.SelectNodes(".//tr");
+                catNodes.RemoveAt(0);
+
+                var category = node.SelectSingleNode(".//h2").InnerText;
+
+                foreach (var catNode in catNodes)
+                {
+                    var titleNode = catNode.SelectSingleNode(".//a/text()");
+
+                    string title = "";
+                    if (titleNode != null)
+                        title = titleNode.InnerText;
+                    else
+                        continue;
+
+
+                    string date =
+                        catNode.SelectSingleNode(
+                                ".//td[2]")
+                            .InnerText;
+
+                    string relativeLink = catNode.SelectSingleNode(".//a").GetAttributeValue("href", "");
+                    var finalLink = new Uri("http://" + page.Host).Append(relativeLink);
+
+                    CultureInfo danish = new CultureInfo("da-DK");
+
+                    Job job = new Job
+                    {
+                        Employer = "Jammerbugt Kommune",
+                        Category = category,
+                        DueDate = DateTime.Parse(date, danish),
+                        JobTitle = title,
+                        Link = finalLink
+                    };
+                    BritScraper.Jobs.Add(job);
+                }              
+            }
+        }
+
         public static void GetRebild()
         {
             Uri page = new Uri("https://rebild.dk/borger/arbejde-og-jobsoegning/ledige-stillinger/");
@@ -34,8 +76,7 @@ namespace BritScraper
             string category = "";
 
             foreach (HtmlNode node in nodes)
-            {
-                
+            {              
                 switch (node.Name)
                 {
                     case "h3":
