@@ -16,54 +16,7 @@ namespace BritScraper
         {          
             _doc = Web.Load(pageUri);
         }
-
-        public static void GetJammerbugt()
-        {
-            Uri page = new Uri("https://signatur.frontlab.com/ExtJobs/DefaultHosting/JobList.aspx?ClientId=1475");
-            LoadPage(page);
-
-            var nodes = _doc.DocumentNode.SelectNodes("//*[@class='job-list-classic']");
-
-            foreach (var node in nodes)
-            {
-                var catNodes = node.SelectNodes(".//tr");
-                catNodes.RemoveAt(0);
-
-                var category = node.SelectSingleNode(".//h2").InnerText;
-
-                foreach (var catNode in catNodes)
-                {
-                    var titleNode = catNode.SelectSingleNode(".//a/text()");
-
-                    string title = "";
-                    if (titleNode != null)
-                        title = titleNode.InnerText;
-                    else
-                        continue;
-
-
-                    string date =
-                        catNode.SelectSingleNode(
-                                ".//td[2]")
-                            .InnerText;
-
-                    string relativeLink = catNode.SelectSingleNode(".//a").GetAttributeValue("href", "");
-                    var finalLink = new Uri("http://" + page.Host).Append(relativeLink);
-
-                    CultureInfo danish = new CultureInfo("da-DK");
-
-                    Job job = new Job
-                    {
-                        Employer = "Jammerbugt Kommune",
-                        Category = category,
-                        DueDate = DateTime.Parse(date, danish),
-                        JobTitle = title,
-                        Link = finalLink
-                    };
-                    BritScraper.Jobs.Add(job);
-                }              
-            }
-        }
+       
 
         public static void GetRebild()
         {
@@ -189,6 +142,101 @@ namespace BritScraper
                     //job.DescriptionText = WebUtility.HtmlDecode(descNode.InnerText);   
                     
                     BritScraper.Jobs.Add(job);
+                }
+            }
+        }
+
+        public static void GetJammerbugt()
+        {
+            Uri page = new Uri("https://signatur.frontlab.com/ExtJobs/DefaultHosting/JobList.aspx?ClientId=1475");
+            LoadPage(page);
+
+            var nodes = _doc.DocumentNode.SelectNodes("//*[@class='job-list-classic']");
+
+            foreach (var node in nodes)
+            {
+                var catNodes = node.SelectNodes(".//tr");
+                catNodes.RemoveAt(0);
+
+                var category = node.SelectSingleNode(".//h2").InnerText;
+
+                foreach (var catNode in catNodes)
+                {
+                    var titleNode = catNode.SelectSingleNode(".//a/text()");
+
+                    string title = "";
+                    if (titleNode != null)
+                        title = titleNode.InnerText;
+                    else
+                        continue;
+
+
+                    string date =
+                        catNode.SelectSingleNode(
+                                ".//td[2]")
+                            .InnerText;
+
+                    string relativeLink = catNode.SelectSingleNode(".//a").GetAttributeValue("href", "");
+                    var finalLink = new Uri("http://" + page.Host).Append(relativeLink);
+
+                    Job job = new Job
+                    {
+                        Employer = "Jammerbugt Kommune",
+                        Category = category,
+                        DueDate = DateTime.Parse(date, new CultureInfo("da-DK")),
+                        JobTitle = title,
+                        Link = finalLink
+                    };
+                    BritScraper.Jobs.Add(job);
+                }
+            }
+        }
+
+        public static void GetRanders()
+        {
+            Uri page = new Uri("https://job.randers.dk/ledige-job-i-randers-kommune/");
+            LoadPage(page);
+
+            var nodes = _doc.DocumentNode.SelectNodes("//*[@id='contentArea']/div/div[1]/section/div[1]/*");
+
+            string category = "";
+
+            foreach (var node in nodes)
+            {              
+                switch (node.Name)
+                {
+                    case "h2":
+                        category = WebUtility.HtmlDecode(node.InnerText);
+                        break;
+                    case "ul":
+                        
+                        var jobNodes = node.SelectNodes("./*");
+
+                        foreach (var jobNode in jobNodes)
+                        {
+                            Job job = new Job();
+                            job.Category = category;
+                            var titleNode = jobNode.SelectSingleNode(".//a");
+                            job.JobTitle = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
+                            job.Employer = "Randers Kommune";
+
+                            string relativeLink = titleNode.GetAttributeValue("href", "");
+                            job.Link = page.Append(relativeLink);
+
+                            LoadPage(job.Link);
+                            string date =
+                                _doc.DocumentNode.SelectSingleNode(
+                                    "//*[@id='contentArea']/div/div[2]/aside/article[1]/div/p[3]").InnerText;
+
+                            date = date.Replace("Ansøgningsfrist", "").Trim();
+
+                            job.DueDate = DateTime.Parse(date, new CultureInfo("da-DK"));
+                            BritScraper.Jobs.Add(job);
+                        }
+                        
+                        break;
+                    default:
+                       continue;
                 }
             }
         }

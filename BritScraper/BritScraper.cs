@@ -20,7 +20,7 @@ namespace BritScraper
         {
             InitializeComponent();
             olv_jobs.FilterMenuBuildStrategy = new MyFilterMenuBuilder();
-           
+
             GetJobs();      
         }
   
@@ -39,7 +39,8 @@ namespace BritScraper
                 new Task(Scraper.GetRebild),
                 new Task(Scraper.GetAalborg),
                 new Task(Scraper.GetFrederikshavn),
-                new Task(Scraper.GetJammerbugt)
+                new Task(Scraper.GetJammerbugt),
+                new Task(Scraper.GetRanders)
             };
             foreach (Task task in tasks)
             {
