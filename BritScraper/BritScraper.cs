@@ -50,7 +50,8 @@ namespace BritScraper
                 new TaskWithStatus(new Task(Scraper.GetJammerbugt), "Jammerbugt"),
                 new TaskWithStatus(new Task(Scraper.GetRanders), "Randers"),
                 new TaskWithStatus(new Task(Scraper.GetVesthimmerland), "Vesthimmerland"),
-                new TaskWithStatus(new Task(Scraper.GetMariagerfjord), "Mariagerfjord" )
+                new TaskWithStatus(new Task(Scraper.GetMariagerfjord), "Mariagerfjord"),
+                new TaskWithStatus(new Task(Scraper.GetBrønderslev), "Brønderslev")
             };
 
             foreach (TaskWithStatus task in Tasks)

@@ -12,7 +12,7 @@ namespace BritScraper
         private static HtmlDocument _doc = new HtmlDocument();
 
         public static void LoadPage(Uri pageUri)
-        {          
+        {
             _doc = Web.Load(pageUri);
         }
 
@@ -27,7 +27,7 @@ namespace BritScraper
             string category = "";
 
             foreach (HtmlNode node in nodes)
-            {              
+            {
                 switch (node.Name)
                 {
                     case "h3":
@@ -39,7 +39,7 @@ namespace BritScraper
                             Employer = "Rebild Kommune",
                             Category = category
                         };
-                        
+
                         HtmlNode titleNode = node.SelectSingleNode("./div[1]");
                         job.JobTitle = titleNode.InnerText.Trim();
 
@@ -49,7 +49,7 @@ namespace BritScraper
                         //Convert date
                         CultureInfo danish = new CultureInfo("da-DK");
                         string date = node.SelectSingleNode("./div[2]").InnerText;
-                        date = date.Substring(date.IndexOf(":", StringComparison.Ordinal)+1).Trim();
+                        date = date.Substring(date.IndexOf(":", StringComparison.Ordinal) + 1).Trim();
                         job.DueDate = DateTime.Parse(date, danish);
 
                         //Load page for job and get description
@@ -99,13 +99,14 @@ namespace BritScraper
                     //job.DescriptionText = descNode.InnerText;
 
                     BritScraper.Jobs.Add(job);
-                }             
+                }
             }
         }
 
         public static void GetFrederikshavn()
         {
-            Uri page = new Uri("https://frederikshavn.dk/politik/om-kommunen/kommunen-som-arbejdsplads/ledige-stillinger/");
+            Uri page = new Uri(
+                "https://frederikshavn.dk/politik/om-kommunen/kommunen-som-arbejdsplads/ledige-stillinger/");
             LoadPage(page);
 
             var categories = _doc.DocumentNode.SelectNodes("//*[@class='emply__group']");
@@ -138,7 +139,7 @@ namespace BritScraper
                     //LoadPage(job.Link);
                     //HtmlNode descNode = _doc.DocumentNode.SelectSingleNode("//*[@id='content']/section/div[2]/div/article/div/div[2]/div/div");
                     //job.DescriptionText = WebUtility.HtmlDecode(descNode.InnerText);   
-                    
+
                     BritScraper.Jobs.Add(job);
                 }
             }
@@ -200,14 +201,14 @@ namespace BritScraper
             string category = "";
 
             foreach (var node in nodes)
-            {              
+            {
                 switch (node.Name)
                 {
                     case "h2":
                         category = WebUtility.HtmlDecode(node.InnerText);
                         break;
                     case "ul":
-                        
+
                         var jobNodes = node.SelectNodes("./*");
 
                         foreach (var jobNode in jobNodes)
@@ -231,10 +232,10 @@ namespace BritScraper
                             job.DueDate = DateTime.Parse(date, new CultureInfo("da-DK"));
 
                             BritScraper.Jobs.Add(job);
-                        }                        
+                        }
                         break;
                     default:
-                       continue;
+                        continue;
                 }
             }
         }
@@ -247,7 +248,7 @@ namespace BritScraper
 
             var countNode = doc.DocumentNode.SelectNodes("//*[@id='searchPage1']/div[6]/ul/li");
             int pageCount = countNode.Select(p => int.TryParse(p.InnerText.Trim(), out int result) ? result : 0).Max();
-            
+
             for (int i = 1; i <= pageCount; i++)
             {
                 doc = Web.Load(page.Append($"?page={i}"));
@@ -260,7 +261,7 @@ namespace BritScraper
                     {
                         Employer = "Vesthimmerland Kommune",
                         JobTitle = WebUtility.HtmlDecode(aNode.GetAttributeValue("title", "")),
-                        Link =  new Uri(aNode.GetAttributeValue("href", "")),
+                        Link = new Uri(aNode.GetAttributeValue("href", "")),
                         Category = "N/A",
                     };
 
@@ -270,7 +271,7 @@ namespace BritScraper
                     {
                         job.DueDate = result;
                     }
-                        
+
                     BritScraper.Jobs.Add(job);
                 }
             }
@@ -278,7 +279,8 @@ namespace BritScraper
 
         public static void GetMariagerfjord()
         {
-            Uri page = new Uri("https://mariagerfjord.emply.net/overview/Mariagerfjord.aspx?mediaId=537a7324-00fa-42c1-822d-d0256092ddb9");
+            Uri page = new Uri(
+                "https://mariagerfjord.emply.net/overview/Mariagerfjord.aspx?mediaId=537a7324-00fa-42c1-822d-d0256092ddb9");
 
             HtmlDocument doc = Web.Load(page);
 
@@ -290,6 +292,8 @@ namespace BritScraper
                 if (aNode is null)
                     continue;
 
+
+
                 Job job = new Job
                 {
                     Employer = "Mariagerfjord Kommune",
@@ -298,7 +302,8 @@ namespace BritScraper
                     Link = new Uri(aNode.GetAttributeValue("href", "")),
                 };
 
-                if (DateTime.TryParse(node.SelectSingleNode("./td[2]").InnerText, new CultureInfo("da-DK"), DateTimeStyles.None, out DateTime result))
+                if (DateTime.TryParse(node.SelectSingleNode("./td[2]").InnerText, new CultureInfo("da-DK"),
+                    DateTimeStyles.None, out DateTime result))
                 {
                     job.DueDate = result;
                 }
@@ -306,14 +311,53 @@ namespace BritScraper
                 BritScraper.Jobs.Add(job);
             }
         }
+
+        public static void GetBrønderslev()
+        {
+            Uri page = new Uri(
+                "https://bronderslev.emply.net/overview/bronderslev.aspx?mediaid=f1fb8e12-1928-4328-88fd-9918a34a2bf2");
+
+            HtmlDocument doc = Web.Load(page);
+
+            var nodes = doc.DocumentNode.SelectNodes("//*[@id='form1']/table/*");
+
+            string category = "";
+
+            foreach (var node in nodes)
+            {
+                var aNode = node.SelectSingleNode(".//a");
+                if (aNode is null)
+                {
+                    category = WebUtility.HtmlDecode(node.SelectSingleNode("./td[1]").InnerText);
+                    continue;
+                }
+                    
+
+                Job job = new Job
+                {
+                    Employer = "Brønderslev Kommune",
+                    JobTitle = WebUtility.HtmlDecode(aNode.InnerText),
+                    Category = category,
+                    Link = new Uri(aNode.GetAttributeValue("href", "")),
+                };
+
+                if (DateTime.TryParse(node.SelectSingleNode("./td[2]").InnerText, new CultureInfo("da-DK"),
+                    DateTimeStyles.None, out DateTime result))
+                {
+                    job.DueDate = result;
+                }
+
+                BritScraper.Jobs.Add(job);
+            }
+        }       
     }
 
     public static class UriExtensions
     {
         public static Uri Append(this Uri uri, params string[] paths)
         {
-            return new Uri(paths.Aggregate(uri.AbsoluteUri, (current, path) => $"{current.TrimEnd('/')}/{path.TrimStart('/')}"));
+            return new Uri(paths.Aggregate(uri.AbsoluteUri,
+                (current, path) => $"{current.TrimEnd('/')}/{path.TrimStart('/')}"));
         }
     }
-
 }
