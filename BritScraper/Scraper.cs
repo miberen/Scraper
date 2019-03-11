@@ -1,11 +1,8 @@
 ﻿using HtmlAgilityPack;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
-using BrightIdeasSoftware;
 
 namespace BritScraper
 {
@@ -18,7 +15,6 @@ namespace BritScraper
         {          
             _doc = Web.Load(pageUri);
         }
-       
 
         public static void GetRebild()
         {
@@ -166,7 +162,7 @@ namespace BritScraper
                 {
                     var titleNode = catNode.SelectSingleNode(".//a/text()");
 
-                    string title = "";
+                    string title;
                     if (titleNode != null)
                         title = titleNode.InnerText;
                     else
@@ -240,6 +236,74 @@ namespace BritScraper
                     default:
                        continue;
                 }
+            }
+        }
+
+        public static void GetVesthimmerland()
+        {
+            Uri page = new Uri("https://www.vesthimmerland.dk/ledige-stillinger");
+
+            HtmlDocument doc = Web.Load(page);
+
+            var countNode = doc.DocumentNode.SelectNodes("//*[@id='searchPage1']/div[6]/ul/li");
+            int pageCount = countNode.Select(p => int.TryParse(p.InnerText.Trim(), out int result) ? result : 0).Max();
+            
+            for (int i = 1; i <= pageCount; i++)
+            {
+                doc = Web.Load(page.Append($"?page={i}"));
+                var nodes = doc.DocumentNode.SelectNodes("//*[@class='job-list search-row']/*");
+
+                foreach (var node in nodes)
+                {
+                    var aNode = node.SelectSingleNode(".//a");
+                    Job job = new Job
+                    {
+                        Employer = "Vesthimmerland Kommune",
+                        JobTitle = WebUtility.HtmlDecode(aNode.GetAttributeValue("title", "")),
+                        Link =  new Uri(aNode.GetAttributeValue("href", "")),
+                        Category = "N/A",
+                    };
+
+                    if (DateTime.TryParse(node.SelectSingleNode(".//*[@class='applyDate']").InnerText
+                        .Replace("Ansøgningsfrist", "")
+                        .Trim(), new CultureInfo("da-DK"), DateTimeStyles.None, out DateTime result))
+                    {
+                        job.DueDate = result;
+                    }
+                        
+                    BritScraper.Jobs.Add(job);
+                }
+            }
+        }
+
+        public static void GetMariagerfjord()
+        {
+            Uri page = new Uri("https://mariagerfjord.emply.net/overview/Mariagerfjord.aspx?mediaId=537a7324-00fa-42c1-822d-d0256092ddb9");
+
+            HtmlDocument doc = Web.Load(page);
+
+            var nodes = doc.DocumentNode.SelectNodes("//*[@id='form1']/table/*");
+
+            foreach (var node in nodes)
+            {
+                var aNode = node.SelectSingleNode(".//a");
+                if (aNode is null)
+                    continue;
+
+                Job job = new Job
+                {
+                    Employer = "Mariagerfjord Kommune",
+                    JobTitle = WebUtility.HtmlDecode(aNode.InnerText),
+                    Category = "N/A",
+                    Link = new Uri(aNode.GetAttributeValue("href", "")),
+                };
+
+                if (DateTime.TryParse(node.SelectSingleNode("./td[2]").InnerText, new CultureInfo("da-DK"), DateTimeStyles.None, out DateTime result))
+                {
+                    job.DueDate = result;
+                }
+
+                BritScraper.Jobs.Add(job);
             }
         }
     }

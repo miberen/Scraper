@@ -110,6 +110,7 @@
             this.olv_jobs.UseFilterIndicator = true;
             this.olv_jobs.UseFiltering = true;
             this.olv_jobs.View = System.Windows.Forms.View.Details;
+            this.olv_jobs.ItemActivate += new System.EventHandler(this.olv_jobs_ItemActivate);
             // 
             // employer
             // 
