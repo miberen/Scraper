@@ -15,6 +15,7 @@ namespace BritScraper
     public partial class BritScraper : Form
     {
         public static List<Job> Jobs = new List<Job>();
+        public static List<TaskWithStatus> Tasks;
 
         public BritScraper()
         {
@@ -24,31 +25,45 @@ namespace BritScraper
             GetJobs();      
         }
   
-        private void PopulateView()
+        public void PopulateView()
         {
-            olv_jobs.AddObjects(Jobs);
-            olv_jobs.AutoResizeColumns();
+            lock (Jobs)
+            {
+                olv_jobs.AddObjects(Jobs);
+                olv_jobs.AutoResizeColumns();
+            }
         }
 
         public async void GetJobs()
         {
-            tssl_bar_status.Text = @"Loader...";
+            StringBuilder sB = new StringBuilder(@"Loader... ");
 
-            List<Task> tasks = new List<Task>
+            Tasks = new List<TaskWithStatus>
             {
-                new Task(Scraper.GetRebild),
-                new Task(Scraper.GetAalborg),
-                new Task(Scraper.GetFrederikshavn),
-                new Task(Scraper.GetJammerbugt),
-                new Task(Scraper.GetRanders)
+                new TaskWithStatus(new Task(Scraper.GetRebild), "Rebild"),
+                new TaskWithStatus(new Task(Scraper.GetAalborg), "Aalborg"),
+                new TaskWithStatus(new Task(Scraper.GetFrederikshavn), "Frederikshavn"),
+                new TaskWithStatus(new Task(Scraper.GetJammerbugt), "Jammerbugt"),
+                new TaskWithStatus(new Task(Scraper.GetRanders), "Randers")
             };
-            foreach (Task task in tasks)
+            foreach (TaskWithStatus task in Tasks)
             {
+                sB.Append(task.Name + " : ");
                 task.Start();
             }
-            await Task.WhenAll(tasks.ToArray());
+            tssl_bar_status.Text = sB.ToString();
 
-            PopulateView();
+            while (Tasks.Count > 0)
+            {
+                Task firstFinishedTask = await Task.WhenAny(Tasks.Select(taskWithStatus => taskWithStatus.Task).ToList());
+
+                sB.Replace(Tasks.Find(p => p.Task == firstFinishedTask).Name + " : ", "");
+                tssl_bar_status.Text = sB.ToString();
+
+                Tasks.RemoveAll(p => p.Task == firstFinishedTask);
+                
+                PopulateView();
+            }
 
             tssl_bar_status.Text = @"Færdig!";
         }
@@ -68,12 +83,11 @@ namespace BritScraper
 
         private void txb_filter_TextChanged(object sender, EventArgs e)
         {
-            var searchWords = (sender as TextBox).Text.Split(';').ToList();
-            if (searchWords.Count == 0)
+            var searchWords = (sender as TextBox)?.Text.Split(';').ToList();
+            if (searchWords != null && searchWords.Count == 0)
                 olv_jobs.ModelFilter = null;
-            else
+            else if (searchWords != null)
                 olv_jobs.ModelFilter = TextMatchFilter.Contains(olv_jobs, searchWords.ToArray());
-
         }
     }
 
@@ -104,6 +118,25 @@ namespace BritScraper
         public Job()
         {
             
+        }
+    }
+
+    public class TaskWithStatus
+    {
+
+        public Task Task { get; set; }
+        public bool IsDone { get; set; } = false;
+        public string Name { get; set; }
+
+        public TaskWithStatus(Task task, string name)
+        {
+            Task = task;
+            Name = name;
+        }
+
+        public void Start()
+        {
+            Task.Start();
         }
     }
 

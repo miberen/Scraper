@@ -1,8 +1,10 @@
 ﻿using HtmlAgilityPack;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using BrightIdeasSoftware;
 
 namespace BritScraper
@@ -214,8 +216,7 @@ namespace BritScraper
 
                         foreach (var jobNode in jobNodes)
                         {
-                            Job job = new Job();
-                            job.Category = category;
+                            Job job = new Job {Category = category};
                             var titleNode = jobNode.SelectSingleNode(".//a");
                             job.JobTitle = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
                             job.Employer = "Randers Kommune";
@@ -224,6 +225,7 @@ namespace BritScraper
                             job.Link = page.Append(relativeLink);
 
                             LoadPage(job.Link);
+
                             string date =
                                 _doc.DocumentNode.SelectSingleNode(
                                     "//*[@id='contentArea']/div/div[2]/aside/article[1]/div/p[3]").InnerText;
@@ -231,9 +233,9 @@ namespace BritScraper
                             date = date.Replace("Ansøgningsfrist", "").Trim();
 
                             job.DueDate = DateTime.Parse(date, new CultureInfo("da-DK"));
+
                             BritScraper.Jobs.Add(job);
-                        }
-                        
+                        }                        
                         break;
                     default:
                        continue;
