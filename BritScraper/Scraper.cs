@@ -292,8 +292,6 @@ namespace BritScraper
                 if (aNode is null)
                     continue;
 
-
-
                 Job job = new Job
                 {
                     Employer = "Mariagerfjord Kommune",

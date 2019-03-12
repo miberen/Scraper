@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -14,8 +15,7 @@ namespace BritScraper
 {
     public partial class BritScraper : Form
     {
-        public static List<Job> Jobs = new List<Job>();
-        public static List<TaskWithStatus> Tasks;
+        public static ConcurrentBag<Job> Jobs = new ConcurrentBag<Job>();
 
         public BritScraper()
         {
@@ -29,10 +29,9 @@ namespace BritScraper
         public void PopulateView()
         {
             List<Job> safeJobs = new List<Job>(Jobs);
-            List<Job> newJobs;
 
             var currentJobs = olv_jobs.Objects?.Cast<Job>();
-            newJobs = currentJobs != null ? safeJobs.Except(currentJobs).ToList() : safeJobs;
+            var newJobs = currentJobs != null ? safeJobs.Except(currentJobs).ToList() : safeJobs;
                 
             olv_jobs.AddObjects(newJobs);
             olv_jobs.AutoResizeColumns();
@@ -42,34 +41,34 @@ namespace BritScraper
         {
             var sB = new StringBuilder(@"Loader... ");
 
-            Tasks = new List<TaskWithStatus>
+            List<TaskWithName> tasks = new List<TaskWithName>
             {
-                new TaskWithStatus(new Task(Scraper.GetRebild), "Rebild"),
-                new TaskWithStatus(new Task(Scraper.GetAalborg), "Aalborg"),
-                new TaskWithStatus(new Task(Scraper.GetFrederikshavn), "Frederikshavn"),
-                new TaskWithStatus(new Task(Scraper.GetJammerbugt), "Jammerbugt"),
-                new TaskWithStatus(new Task(Scraper.GetRanders), "Randers"),
-                new TaskWithStatus(new Task(Scraper.GetVesthimmerland), "Vesthimmerland"),
-                new TaskWithStatus(new Task(Scraper.GetMariagerfjord), "Mariagerfjord"),
-                new TaskWithStatus(new Task(Scraper.GetBrønderslev), "Brønderslev")
+                new TaskWithName(new Task(Scraper.GetRebild), "Rebild"),
+                new TaskWithName(new Task(Scraper.GetAalborg), "Aalborg"),
+                new TaskWithName(new Task(Scraper.GetFrederikshavn), "Frederikshavn"),
+                new TaskWithName(new Task(Scraper.GetJammerbugt), "Jammerbugt"),
+                new TaskWithName(new Task(Scraper.GetRanders), "Randers"),
+                new TaskWithName(new Task(Scraper.GetVesthimmerland), "Vesthimmerland"),
+                new TaskWithName(new Task(Scraper.GetMariagerfjord), "Mariagerfjord"),
+                new TaskWithName(new Task(Scraper.GetBrønderslev), "Brønderslev")
             };
 
-            foreach (TaskWithStatus task in Tasks)
+            foreach (TaskWithName task in tasks)
             {
                 sB.Append(task.Name + " : ");
                 task.Start();
             }
             tssl_bar_status.Text = sB.ToString();
 
-            while (Tasks.Count > 0)
+            while (tasks.Count > 0)
             {
-                var firstFinishedTask = await Task.WhenAny(Tasks.Select(taskWithStatus => taskWithStatus.Task).ToList());
+                var firstFinishedTask = await Task.WhenAny(tasks.Select(taskWithStatus => taskWithStatus.Task).ToList());
 
-                sB.Replace(Tasks.Find(p => p.Task == firstFinishedTask).Name + " : ", "");
+                sB.Replace(tasks.Find(p => p.Task == firstFinishedTask).Name + " : ", "");
                 tssl_bar_status.Text = sB.ToString();
                 tssl_bar.Refresh();
 
-                Tasks.RemoveAll(p => p.Task == firstFinishedTask);
+                tasks.RemoveAll(p => p.Task == firstFinishedTask);
 
                 PopulateView();
             }
@@ -137,12 +136,12 @@ namespace BritScraper
         }
     }
 
-    public class TaskWithStatus
+    public class TaskWithName
     {
         public Task Task { get; set; }
         public string Name { get; set; }
 
-        public TaskWithStatus(Task task, string name)
+        public TaskWithName(Task task, string name)
         {
             Task = task;
             Name = name;
